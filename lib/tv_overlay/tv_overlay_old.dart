@@ -53,9 +53,7 @@ class _TvOverlayOldState extends State<TvOverlayOld> {
         return KeyEventResult.ignored;
       }
       if (key.down) {
-        _showSkipIntro
-            ? _skipFocusNode.requestFocus()
-            : _focusPlayPause();
+        _showSkipIntro ? _skipFocusNode.requestFocus() : _focusPlayPause();
         return KeyEventResult.handled;
       }
       if (key.hasSubmitIntent) {

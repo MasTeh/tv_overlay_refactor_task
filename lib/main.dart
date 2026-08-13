@@ -9,6 +9,19 @@ import 'tv_overlay/tv_overlay_old.dart';
 
 const _deviceChannel = MethodChannel('tv_overlay_refactor_task/device');
 
+typedef DeviceInfo = ({bool isTv, bool isEmulator});
+
+Future<DeviceInfo> _loadDeviceInfo() async {
+  final result = await _deviceChannel.invokeMapMethod<String, bool>(
+    'getDeviceInfo',
+  );
+
+  return (
+    isTv: result?['isTv'] ?? false,
+    isEmulator: result?['isEmulator'] ?? false,
+  );
+}
+
 void main() {
   MediaKit.ensureInitialized();
   runApp(const TvOverlayRefactorApp());
@@ -23,14 +36,14 @@ class TvOverlayRefactorApp extends StatelessWidget {
       title: 'TV Overlay Refactor Task',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      home: FutureBuilder<bool?>(
-        future: _deviceChannel.invokeMethod<bool>('isTv'),
+      home: FutureBuilder<DeviceInfo>(
+        future: _loadDeviceInfo(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const ColoredBox(color: Colors.black);
           }
 
-          if (snapshot.data != true) {
+          if (snapshot.data?.isTv != true) {
             return const Scaffold(
               backgroundColor: Colors.black,
               body: Center(
@@ -43,7 +56,9 @@ class TvOverlayRefactorApp extends StatelessWidget {
           }
 
           return BlocProvider(
-            create: (_) => PlayerBloc()..add(const PlayerStarted()),
+            create: (_) =>
+                PlayerBloc(isEmulator: snapshot.data!.isEmulator)
+                  ..add(const PlayerStarted()),
             child: const PlayerScreen(),
           );
         },

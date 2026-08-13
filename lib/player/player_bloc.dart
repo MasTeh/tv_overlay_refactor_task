@@ -12,8 +12,11 @@ const sampleVideoUrl =
     'data534gsf5109/data/movie_hls/master.m3u8';
 
 class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
-  PlayerBloc()
-    : controller = PlayerController(sampleVideoUrl),
+  PlayerBloc({required bool isEmulator})
+    : controller = PlayerController(
+        sampleVideoUrl,
+        isEmulator: isEmulator,
+      ),
       super(const PlayerState()) {
     on<PlayerStarted>(_onStarted);
     on<PlayerValueChanged>(_onValueChanged);

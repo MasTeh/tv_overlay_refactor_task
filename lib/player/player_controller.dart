@@ -67,8 +67,18 @@ class PlayerValue extends Equatable {
 }
 
 class PlayerController extends ValueNotifier<PlayerValue> {
-  PlayerController(this.url) : player = Player(), super(const PlayerValue()) {
-    videoController = VideoController(player);
+  PlayerController(this.url, {required bool isEmulator})
+    : player = Player(),
+      super(const PlayerValue()) {
+    videoController = VideoController(
+      player,
+      configuration: isEmulator
+          ? const VideoControllerConfiguration(
+              vo: 'mediacodec_embed',
+              hwdec: 'mediacodec',
+            )
+          : const VideoControllerConfiguration(),
+    );
     _subscriptions.addAll([
       player.stream.position.listen((position) {
         _update(position: position);
