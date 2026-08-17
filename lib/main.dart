@@ -5,7 +5,7 @@ import 'package:media_kit/media_kit.dart' show MediaKit;
 import 'package:media_kit_video/media_kit_video.dart';
 
 import 'player/player_bloc.dart';
-import 'tv_overlay/tv_overlay_old.dart';
+import 'tv_overlay/tv_overlay.dart';
 
 const _deviceChannel = MethodChannel('tv_overlay_refactor_task/device');
 
@@ -75,6 +75,12 @@ class PlayerScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       body: BlocBuilder<PlayerBloc, PlayerState>(
+        buildWhen: (previous, current) =>
+            previous.value?.initialized != current.value?.initialized ||
+            previous.value?.errorDescription !=
+                current.value?.errorDescription ||
+            previous.value?.aspectRatio != current.value?.aspectRatio ||
+            previous.controller != current.controller,
         builder: (context, state) {
           if (state.value?.errorDescription != null) {
             return Center(child: Text(state.value!.errorDescription!));
@@ -96,7 +102,7 @@ class PlayerScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const TvOverlayOld(),
+              const TvOverlay(),
             ],
           );
         },

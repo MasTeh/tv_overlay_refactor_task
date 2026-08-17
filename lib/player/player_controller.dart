@@ -5,6 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
+Duration clampSeekPosition(Duration position, Duration? duration) {
+  if (position.isNegative) return Duration.zero;
+  if (duration != null && position > duration) return duration;
+  return position;
+}
+
 class PlayerValue extends Equatable {
   const PlayerValue({
     this.position = Duration.zero,
@@ -12,8 +18,6 @@ class PlayerValue extends Equatable {
     this.isPlaying = false,
     this.isLoading = true,
     this.initialized = false,
-    this.showOverlay = false,
-    this.sliderValue = 0,
     this.errorDescription,
     this.aspectRatio = 16 / 9,
   });
@@ -23,8 +27,6 @@ class PlayerValue extends Equatable {
   final bool isPlaying;
   final bool isLoading;
   final bool initialized;
-  final bool showOverlay;
-  final double sliderValue;
   final String? errorDescription;
   final double aspectRatio;
 
@@ -34,8 +36,6 @@ class PlayerValue extends Equatable {
     bool? isPlaying,
     bool? isLoading,
     bool? initialized,
-    bool? showOverlay,
-    double? sliderValue,
     String? errorDescription,
     double? aspectRatio,
   }) {
@@ -45,8 +45,6 @@ class PlayerValue extends Equatable {
       isPlaying: isPlaying ?? this.isPlaying,
       isLoading: isLoading ?? this.isLoading,
       initialized: initialized ?? this.initialized,
-      showOverlay: showOverlay ?? this.showOverlay,
-      sliderValue: sliderValue ?? this.sliderValue,
       errorDescription: errorDescription ?? this.errorDescription,
       aspectRatio: aspectRatio ?? this.aspectRatio,
     );
@@ -59,8 +57,6 @@ class PlayerValue extends Equatable {
     isPlaying,
     isLoading,
     initialized,
-    showOverlay,
-    sliderValue,
     errorDescription,
     aspectRatio,
   ];
@@ -114,9 +110,6 @@ class PlayerController extends ValueNotifier<PlayerValue> {
   int? _width;
   int? _height;
 
-  Timer? overlayTimer;
-  VoidCallback? onOverlayHided;
-
   Future<void> initialize() async {
     await player.open(Media(url), play: false);
     value = value.copyWith(initialized: true, isLoading: false);
@@ -126,53 +119,19 @@ class PlayerController extends ValueNotifier<PlayerValue> {
 
   Future<void> pause() => player.pause();
 
-  Future<void> seekBy(double seconds) {
-    return player.seek(
-      value.position + Duration(milliseconds: (seconds * 1000).round()),
-    );
+  Future<void> seekBy(Duration offset) {
+    return seekToPosition(value.position + offset);
   }
 
-  Future<void> seekTo(double relativePosition) {
-    final duration = value.duration;
-    if (duration == null) return Future.value();
-
-    return player.seek(
-      Duration(
-        milliseconds: (duration.inMilliseconds * relativePosition.clamp(0, 1))
-            .round(),
-      ),
-    );
-  }
-
-  void toggleOverlay() {
-    value = value.copyWith(showOverlay: !value.showOverlay);
-    value.showOverlay ? resetTimer() : overlayTimer?.cancel();
-  }
-
-  void resetTimer() {
-    overlayTimer?.cancel();
-    if (!value.showOverlay) {
-      value = value.copyWith(showOverlay: true);
-    }
-
-    overlayTimer = Timer(const Duration(seconds: 5), () {
-      if (!value.isPlaying) return;
-      value = value.copyWith(showOverlay: false);
-      onOverlayHided?.call();
-    });
+  Future<void> seekToPosition(Duration position) {
+    return player.seek(clampSeekPosition(position, value.duration));
   }
 
   void _update({Duration? position, Duration? duration}) {
     final nextPosition = position ?? value.position;
     final nextDuration = duration ?? value.duration;
 
-    value = value.copyWith(
-      position: nextPosition,
-      duration: nextDuration,
-      sliderValue: nextDuration == null || nextDuration.inMilliseconds == 0
-          ? 0
-          : nextPosition.inMilliseconds / nextDuration.inMilliseconds,
-    );
+    value = value.copyWith(position: nextPosition, duration: nextDuration);
   }
 
   void _updateAspectRatio() {
@@ -182,7 +141,6 @@ class PlayerController extends ValueNotifier<PlayerValue> {
 
   @override
   void dispose() {
-    overlayTimer?.cancel();
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }

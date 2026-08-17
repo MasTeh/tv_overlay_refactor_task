@@ -13,10 +13,7 @@ const sampleVideoUrl =
 
 class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   PlayerBloc({required bool isEmulator})
-    : controller = PlayerController(
-        sampleVideoUrl,
-        isEmulator: isEmulator,
-      ),
+    : controller = PlayerController(sampleVideoUrl, isEmulator: isEmulator),
       super(const PlayerState()) {
     on<PlayerStarted>(_onStarted);
     on<PlayerValueChanged>(_onValueChanged);
